@@ -13,7 +13,7 @@ Cache = redis.from_url(
     ),
     decode_responses=True,
 )
-guild_id = int(Cache.hget("appdata", "guild_id"))
+guild_id = os.environ.get("DISCORD_GUILD_ID")
 
 
 # Aplicacion Discord
