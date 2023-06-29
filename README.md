@@ -1,2 +1,2 @@
-# DiscordBotWebsite
-Dashboard and profile of control bot
+# DiscordBotClient
+A sample bot to control
