@@ -13,7 +13,7 @@ Cache = redis.from_url(
     ),
     decode_responses=True
 )
-guild_id = os.environ.get("DISCORD_GUILD_ID")
+guild_id = int(os.environ.get("DISCORD_GUILD_ID"))
 
 
 # Aplicacion Discord
@@ -22,7 +22,6 @@ class MyBot(commands.Bot):
         super().__init__(*args, **kwargs)
 
         self.initial_extensions = [
-            "cogs.webhook",
             "cogs.thread",
             "cogs.message",
             "cogs.listeners",
