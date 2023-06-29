@@ -11,7 +11,7 @@ Cache = redis.from_url(
         "REDIS_URL",
         "redis://default:ouBdBv91Z7t60rEfd0VL@containers-us-west-192.railway.app:7660",
     ),
-    decode_responses=True,
+    decode_responses=True
 )
 guild_id = os.environ.get("DISCORD_GUILD_ID")
 
