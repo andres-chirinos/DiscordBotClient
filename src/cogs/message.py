@@ -3,14 +3,6 @@ from discord import app_commands
 from discord.ext import commands
 from __init__ import guild_id
 
-class Set_view(discord.ui.View):
-    def __init__(self, bot: commands.Bot, buttons):
-        self.bot = bot
-        super().__init__(timeout=None)
-        for button in buttons:
-            button = discord.ui.Button(label = button['name'], style = discord.ButtonStyle.url, url = button['url'])
-            self.add_item(button)
-
 class Message(commands.GroupCog, name = 'message'):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -33,7 +25,7 @@ class Message(commands.GroupCog, name = 'message'):
     @app_commands.describe(json_content = 'Contenido en json')
     async def send(self, interaction: discord.Interaction, json_content:str):
         message = self.getjsonmessage(json_content)
-        await interaction.channel.send(content = message['content'], embeds = message['embeds'], view = Set_view(bot = self.bot, buttons = message['attachments']))
+        await interaction.channel.send(content = message['content'], embeds = message['embeds'])
         return await interaction.response.send_message(content = '🟢',ephemeral = True)
 
     #Edit
@@ -58,6 +50,14 @@ class Message(commands.GroupCog, name = 'message'):
     @app_commands.describe(limit = 'Numero de mensajes')
     async def purge(self, interaction: discord.Interaction, limit: int = None):
         await interaction.channel.purge(limit=limit)
+        return await interaction.response.send_message(content = f'🟢',ephemeral = True)
+    
+    #Purge
+    @app_commands.command(name = 'reaction', description = 'Añadir una reacción')
+    @app_commands.describe(messagelink = 'Enlace al mensaje')
+    async def reaction(self, interaction: discord.Interaction, messagelink: str, emoji: str):
+        message = await self.getmessagefromlink(messagelink)
+        await message.add_reaction(emoji)
         return await interaction.response.send_message(content = f'🟢',ephemeral = True)
 
 async def setup(bot: commands.Bot):       
