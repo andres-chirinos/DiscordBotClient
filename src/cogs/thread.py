@@ -1,7 +1,6 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from __init__ import guild_id
 
 class Open_modal(discord.ui.Modal):
     def __init__(self, bot: commands.Bot):
@@ -80,5 +79,5 @@ class Thread(commands.GroupCog, name = 'thread'):
         return await interaction.response.send_message(content = '🟢', ephemeral = True, delete_after = 10)
 
 async def setup(bot: commands.Bot): 
-    bot.add_view(Set_view(bot))  
-    await bot.add_cog(Thread(bot), guild = discord.Object(id = guild_id))        
+    bot.add_view(Set_view(bot))
+    await bot.add_cog(Thread(bot), guild = bot.guild)        

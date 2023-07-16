@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from discord.ext import commands
-import os, redis, discord
+from lib.role_connection import RoleConnection
+import os, redis, discord, pymongo
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 load_dotenv(dotenv_path=".env")
@@ -11,16 +12,18 @@ Cache = redis.from_url(
         "REDIS_URL",
         "redis://default:ouBdBv91Z7t60rEfd0VL@containers-us-west-192.railway.app:7660",
     ),
-    decode_responses=True
+    decode_responses=True,
 )
-guild_id = int(os.environ.get("DISCORD_GUILD_ID"))
+Memoria = pymongo.MongoClient(os.getenv("MONGO_URL"))
 
+role_connection = RoleConnection(Memoria=Memoria, client_id=int(os.environ.get("DISCORD_CLIENT_ID")), bot_token=os.environ.get("DISCORD_BOT_TOKEN"), metadata_set = Cache.get("registermetadata"))
 
 # Aplicacion Discord
 class MyBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+    
+        self.guild = discord.Object(id=int(os.environ.get("DISCORD_GUILD_ID")))
         self.initial_extensions = [
             "cogs.thread",
             "cogs.message",
@@ -31,7 +34,7 @@ class MyBot(commands.Bot):
         for ext in self.initial_extensions:
             await self.load_extension(ext)
 
-        await self.tree.sync(guild=discord.Object(id=guild_id))
+        await self.tree.sync(guild=self.guild)
 
     async def on_ready(self):
         await self.change_presence(
@@ -45,12 +48,14 @@ class MyBot(commands.Bot):
         return await super().on_error(event_method)
 
 
+bot = MyBot(
+    command_prefix=commands.when_mentioned_or(str(Cache.hget("appdata", "prefix"))),
+    help_command=None,
+    case_insensitive=True,
+    description=str(Cache.hget("appdata", "desc")),
+    intents=discord.Intents.all(),
+    aplicaction_id=int(os.environ.get("DISCORD_CLIENT_ID")),
+)
+
 if __name__ == "__main__":
-    MyBot(
-        command_prefix=commands.when_mentioned_or(str(Cache.hget("appdata", "prefix"))),
-        help_command=None,
-        case_insensitive=True,
-        description=str(Cache.hget("appdata", "desc")),
-        intents=discord.Intents.all(),
-        aplicaction_id=int(os.environ.get("DISCORD_CLIENT_ID")),
-    ).run(os.environ.get("DISCORD_BOT_TOKEN"))
+    bot.run(os.environ.get("DISCORD_BOT_TOKEN"))

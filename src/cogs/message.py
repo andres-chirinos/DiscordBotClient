@@ -1,16 +1,28 @@
 import discord, json
 from discord import app_commands
 from discord.ext import commands
-from __init__ import guild_id
+from __init__ import Cache
+import discord_emoji
+from n2w import convert
 
-class Set_view(discord.ui.View):
-    def __init__(self, bot: commands.Bot, buttons):
+class Vote_form(discord.ui.Modal):
+    def __init__(self, bot: commands.Bot, message: discord.Message):
         self.bot = bot
-        super().__init__(timeout=None)
-        for button in buttons:
-            button = discord.ui.Button(label = button['name'], style = discord.ButtonStyle.url, url = button['url'])
-            self.add_item(button)
+        self.message = message
+        self.options = discord.ui.TextInput(label = "Numero de opciones", placeholder="2", required = True, max_length=1)
 
+        super().__init__(title = 'Vote form', timeout=60000)
+
+        self.add_item(self.options)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await self.message.clear_reactions()
+        await self.message.pin(reason='Vote')
+        Cache.linsert(name='votes', where='AFTER', refvalue=self.message.id, value=self.message.id)
+        for i in range(1, int(self.options.value)+1):
+            await self.message.add_reaction(discord_emoji.to_unicode(f':{convert(i)}:'))
+        return await interaction.response.send_message(content = '🟢',ephemeral = True)
+    
 class Message(commands.GroupCog, name = 'message'):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -33,7 +45,7 @@ class Message(commands.GroupCog, name = 'message'):
     @app_commands.describe(json_content = 'Contenido en json')
     async def send(self, interaction: discord.Interaction, json_content:str):
         message = self.getjsonmessage(json_content)
-        await interaction.channel.send(content = message['content'], embeds = message['embeds'], view = Set_view(bot = self.bot, buttons = message['attachments']))
+        await interaction.channel.send(content = message['content'], embeds = message['embeds'])
         return await interaction.response.send_message(content = '🟢',ephemeral = True)
 
     #Edit
@@ -60,5 +72,18 @@ class Message(commands.GroupCog, name = 'message'):
         await interaction.channel.purge(limit=limit)
         return await interaction.response.send_message(content = f'🟢',ephemeral = True)
 
-async def setup(bot: commands.Bot):       
-    await bot.add_cog(Message(bot), guild = discord.Object(id = guild_id))       
+    #Reactions
+    @app_commands.command(name = 'reaction', description = 'Añadir una reacción')
+    @app_commands.describe(messagelink = 'Enlace al mensaje')
+    async def reaction(self, interaction: discord.Interaction, messagelink: str, emoji: str):
+        message = await self.getmessagefromlink(messagelink)
+        await message.add_reaction(emoji)
+        return await interaction.response.send_message(content = f'🟢',ephemeral = True)
+
+async def setup(bot: commands.Bot):
+
+    @bot.tree.context_menu(name = 'Create vote', guild = bot.guild)
+    async def create_vote(interaction: discord.Interaction, message: discord.Message):
+        await interaction.response.send_modal(Vote_form(bot, message))
+
+    await bot.add_cog(Message(bot), guild = bot.guild)       
