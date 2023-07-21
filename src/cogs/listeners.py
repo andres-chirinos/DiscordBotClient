@@ -16,16 +16,10 @@ class Open_modal(discord.ui.Modal):
         self.add_item(self.horas)
 
     async def on_submit(self, interaction: discord.Interaction):
-        horaspagadas = (
-            Memoria.get_database("master")
-            .get_collection("users")
-            .find_one({"_id": self.user_id})["metadata"]["hours"]
-        )
         return await interaction.response.send_message(
-            content=f"Tendria que pagar {(int(self.horas.value)- horaspagadas) * float(Cache.get('tax'))}",
+            content=f"Tendria que pagar {round(int(self.horas.value) * float(Cache.get('tax')))}",
             ephemeral=True,
         )
-
 
 class Set_view(discord.ui.View):
     def __init__(self, bot: commands.Bot):
