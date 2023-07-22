@@ -44,10 +44,6 @@ class MyBot(commands.Bot):
             ),
         )
 
-    async def on_error(self, event_method):
-        return await super().on_error(event_method)
-
-
 bot = MyBot(
     command_prefix=commands.when_mentioned_or(str(Cache.hget("appdata", "prefix"))),
     help_command=None,

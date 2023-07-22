@@ -71,6 +71,14 @@ class Message(commands.GroupCog, name = 'message'):
     async def purge(self, interaction: discord.Interaction, limit: int = None):
         await interaction.channel.purge(limit=limit)
         return await interaction.response.send_message(content = f'🟢',ephemeral = True)
+    
+    #Purge
+    @app_commands.command(name = 'reaction', description = 'Añadir una reacción')
+    @app_commands.describe(messagelink = 'Enlace al mensaje')
+    async def reaction(self, interaction: discord.Interaction, messagelink: str, emoji: str):
+        message = await self.getmessagefromlink(messagelink)
+        await message.add_reaction(emoji)
+        return await interaction.response.send_message(content = f'🟢',ephemeral = True)
 
     #Reactions
     @app_commands.command(name = 'reaction', description = 'Añadir una reacción')

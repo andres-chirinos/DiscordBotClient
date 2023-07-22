@@ -1,6 +1,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
+from __init__ import Cache
 
 class Open_modal(discord.ui.Modal):
     def __init__(self, bot: commands.Bot):
@@ -26,6 +27,19 @@ class Set_view(discord.ui.View):
     @discord.ui.button(label = "Abrir un hilo privado", style = discord.ButtonStyle.red, custom_id = 'thread_button')
     async def open(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(Open_modal(self.bot))
+
+class Ticket_view(discord.ui.View):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        super().__init__(timeout = None)
+    
+    @discord.ui.button(label = "Abrir ticket", style = discord.ButtonStyle.red, custom_id = 'ticket_button')
+    async def open(self, interaction: discord.Interaction, button: discord.ui.Button):
+        num = int(Cache.hget("appdata", "ticket_num"))+1
+        Cache.hset("appdata", "ticket_num", num)
+        thread = await interaction.channel.create_thread(name = f'{interaction.user.name}-{num}', type = discord.ChannelType.private_thread, invitable = False)
+        await thread.add_user(interaction.user)
+        return await interaction.response.send_message(content = '🟢', ephemeral = True, delete_after = 10)
 
 class Thread(commands.GroupCog, name = 'thread'):
     def __init__(self, bot: commands.Bot):
@@ -76,6 +90,12 @@ class Thread(commands.GroupCog, name = 'thread'):
     @app_commands.command(name = 'set', description = 'Boton para crear hilos')
     async def set(self, interaction: discord.Interaction, message: str = None): 
         await interaction.channel.send(content = message, view = Set_view(self.bot))
+        return await interaction.response.send_message(content = '🟢', ephemeral = True, delete_after = 10)
+    
+    #Set a ticket open button
+    @app_commands.command(name = 'ticket', description = 'Boton para crear hilos')
+    async def ticket(self, interaction: discord.Interaction, message: str = None): 
+        await interaction.channel.send(content = message, view = Ticket_view(self.bot))
         return await interaction.response.send_message(content = '🟢', ephemeral = True, delete_after = 10)
 
 async def setup(bot: commands.Bot): 
