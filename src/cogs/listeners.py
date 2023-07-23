@@ -21,6 +21,7 @@ class Open_modal(discord.ui.Modal):
             ephemeral=True,
         )
 
+
 class Set_view(discord.ui.View):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -90,16 +91,20 @@ class Listeners(commands.GroupCog, name="listeners"):
     async def paytax(
         self, interaction: discord.Interaction, user: discord.User, horas: int
     ):
-        metadata = (
-            Memoria.get_database("master")
-            .get_collection("users")
-            .find_one({"_id": user.id})["metadata"]
-        )
-        metadata["hours"] = horas + metadata["hours"]
-        metadata["update"] = datetime.datetime.now().isoformat()
-        Memoria.get_database("master").get_collection("users").update_one(
-            {"_id": user.id}, {"$set": {"metadata": metadata}}
-        )
+        if horas != 0:
+            metadata = role_connection.get_role_data(user.id)["metadata"]
+            metadata["hours"] = horas + metadata["hours"]
+            metadata["update"] = datetime.datetime.now().isoformat()
+
+            Memoria.get_database("master").get_collection("users").update_one(
+                {"_id": user.id}, {"$set": {"metadata": metadata}}
+            )
+            webhook = DiscordWebhook(
+                url=Cache.hget("webhooks", "tax-log"),
+                rate_limit_retry=True,
+                content=f"<@{user.id}> pagó {horas} por valor {round(horas * float(Cache.get('tax')))}$",
+            )
+            await webhook.execute()
         await role_connection.reflesh_role_connection(user.id)
         return await interaction.response.send_message(
             content="🟢", ephemeral=True, delete_after=10
