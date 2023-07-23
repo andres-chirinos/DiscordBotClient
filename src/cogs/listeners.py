@@ -91,7 +91,8 @@ class Listeners(commands.GroupCog, name="listeners"):
         self, interaction: discord.Interaction, user: discord.User, horas: int
     ):
         if horas != 0:
-            metadata = role_connection.get_role_data(user.id)["metadata"]
+            metadata = await role_connection.get_role_data(user.id)
+            metadata = metadata["metadata"]
             metadata["hours"] = horas + metadata["hours"]
             metadata["update"] = datetime.datetime.now().isoformat()
 
