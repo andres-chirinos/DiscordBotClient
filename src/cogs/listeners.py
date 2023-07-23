@@ -4,7 +4,7 @@ from __init__ import Cache, Memoria, role_connection
 import discord, datetime
 from discord import app_commands
 from discord.ext import commands
-
+from discord.utils import get
 
 class Open_modal(discord.ui.Modal):
     def __init__(self, bot: commands.Bot, user_id: int = None, *args, **kwargs):
@@ -92,7 +92,8 @@ class Listeners(commands.GroupCog, name="listeners"):
         self, interaction: discord.Interaction, user: discord.User, horas: int
     ):
         if horas != 0:
-            metadata = role_connection.get_role_data(user.id)["metadata"]
+            metadata = role_connection.get_role_data(user.id)
+            metadata = metadata["metadata"]
             metadata["hours"] = horas + metadata["hours"]
             metadata["update"] = datetime.datetime.now().isoformat()
 
@@ -109,7 +110,12 @@ class Listeners(commands.GroupCog, name="listeners"):
         return await interaction.response.send_message(
             content="🟢", ephemeral=True, delete_after=10
         )
-
+    @app_commands.command(description="Elegir jurados")
+    async def choosejurors(self, interaction: discord.Interaction, user1: discord.User):
+        personas = list()
+        for role_id in Cache.lrange("ranks", 0, -1):
+            role = get(interaction.guild.roles, id = int(role_id)).members
+            
 
 async def setup(bot: commands.Bot):
     bot.add_view(Set_view(bot))
