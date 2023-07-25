@@ -16,7 +16,7 @@ Cache = redis.from_url(
 )
 Memoria = pymongo.MongoClient(os.getenv("MONGO_URL"))
 
-role_connection = RoleConnection(Memoria=Memoria, client_id=int(os.environ.get("DISCORD_CLIENT_ID")), bot_token=os.environ.get("DISCORD_BOT_TOKEN"), metadata_set = Cache.get("registermetadata"))
+role_connection = RoleConnection(Memoria=Memoria, client_id=int(os.environ.get("DISCORD_CLIENT_ID")), bot_token=os.environ.get("DISCORD_BOT_TOKEN"), client_secret = os.environ.get("DISCORD_CLIENT_SECRET"),metadata_set = Cache.get("registermetadata"))
 
 # Aplicacion Discord
 class MyBot(commands.Bot):

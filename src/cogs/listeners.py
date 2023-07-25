@@ -1,10 +1,11 @@
 from discord_webhook import DiscordWebhook
 from __init__ import Cache, Memoria, role_connection
 
-import discord, datetime
+import discord, datetime, random
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import get
+
 
 class Open_modal(discord.ui.Modal):
     def __init__(self, bot: commands.Bot, user_id: int = None, *args, **kwargs):
@@ -92,30 +93,45 @@ class Listeners(commands.GroupCog, name="listeners"):
         self, interaction: discord.Interaction, user: discord.User, horas: int
     ):
         if horas != 0:
-            metadata = role_connection.get_role_data(user.id)
-            metadata = metadata["metadata"]
+            role_data = await role_connection.get_role_data(user.id)
+            metadata = role_data["metadata"]
             metadata["hours"] = horas + metadata["hours"]
             metadata["update"] = datetime.datetime.now().isoformat()
 
             Memoria.get_database("master").get_collection("users").update_one(
                 {"_id": user.id}, {"$set": {"metadata": metadata}}
             )
-            webhook = DiscordWebhook(
+            DiscordWebhook(
                 url=Cache.hget("webhooks", "tax-log"),
                 rate_limit_retry=True,
                 content=f"<@{user.id}> pagó {horas} por valor {round(horas * float(Cache.get('tax')))}$",
-            )
-            await webhook.execute()
+            ).execute()
         await role_connection.reflesh_role_connection(user.id)
         return await interaction.response.send_message(
             content="🟢", ephemeral=True, delete_after=10
         )
+
     @app_commands.command(description="Elegir jurados")
-    async def choosejurors(self, interaction: discord.Interaction, user1: discord.User):
-        personas = list()
+    async def choosejurors(
+        self,
+        interaction: discord.Interaction,
+        nojurados: str = "0",
+        numjurados: int = 3,
+    ):
+        nojurados = [int(user_id[2:-1]) for user_id in nojurados.split(" ")]
+
         for role_id in Cache.lrange("ranks", 0, -1):
-            role = get(interaction.guild.roles, id = int(role_id)).members
-            
+            jurados = [
+                f"<@!{member.id}>"
+                for member in get(interaction.guild.roles, id=int(role_id)).members
+                if not member.id in nojurados
+            ]
+
+        return await interaction.response.send_message(
+            content=f"{' '.join(random.choices(jurados, k = numjurados))} son jurados",
+            delete_after=10,
+        )
+
 
 async def setup(bot: commands.Bot):
     bot.add_view(Set_view(bot))
