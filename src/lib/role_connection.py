@@ -7,12 +7,14 @@ class RoleConnection:
         app: quart.Quart = None,
         Memoria: pymongo.MongoClient = None,
         client_id=None,
-        bot_token: str = None,
+        bot_token: str = None, 
+        client_secret: str = None,
         metadata_set: list = None,
         *args,
         **kwargs,
     ):
         self.client_id = client_id or app.config["DISCORD_CLIENT_ID"]
+        self.client_secret = client_secret or app.config["DISCORD_CLIENT_SECRET"]
         self.bot_token = bot_token or app.config["DISCORD_BOT_TOKEN"]
         self.collection = Memoria.get_database("master").get_collection("users")
         self.metadata_set = json.loads(metadata_set or app.config["METADATA_SET"])
@@ -70,9 +72,28 @@ class RoleConnection:
             )
     
     async def reflesh_role_connection(self, id:int):
-        bot_access_token = self.collection.find_one({"_id":id})["bot_tokens"]["access_token"]
-        body = await self.get_role_data(id)
-        return await self.push_role_connection(bot_access_token, body)
+        try:
+            bot_tokens = self.collection.find_one({"_id":id})["bot_tokens"]
+            body = await self.get_role_data(id)
+            return await self.push_role_connection(bot_tokens["access_token"], body)
+        except:
+            bot_tokens = await self.refresh_token(bot_tokens["refresh_token"])
+            self.collection.update_one({"_id":id}, {"bot_tokens": bot_tokens})
+            return await self.push_role_connection(bot_tokens["access_token"], body)
+        
+    async def refresh_token(self, refresh_token: str):
+        data = {
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token
+        }
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+        r = requests.post('%s/oauth2/token' % 'https://discord.com/api', data=data, headers=headers)
+        r.raise_for_status()
+        return r.json()
 
     async def _find_clear_data(self, id: int):
         return self.collection.find_one({"_id": id})
